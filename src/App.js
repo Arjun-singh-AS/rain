@@ -1,8 +1,8 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState, useRef } from 'react';
 import './App.css';
 
 const App = () => {
-  const rows = 15;
+  const rows = 20;
   const cols = 20;
 
   // Initialize the grid with black cells
@@ -10,112 +10,84 @@ const App = () => {
     Array(rows).fill().map(() => Array(cols).fill({ color: '#222', value: 0 }))
   );
 
-  // State to store the current base color for the raindrops
-  const [currentColor, setCurrentColor] = useState(getRandomColor());
+  // Store the interval ID to clear it when a new cell is clicked
+  const intervalRef = useRef(null);
 
-  // Function to generate a random color
-  function getRandomColor() {
-    const letters = '0123456789ABCDEF';
-    let color = '#';
-    for (let i = 0; i < 6; i++) {
-      color += letters[Math.floor(Math.random() * 16)];
+  const gridTask = (row, col) => {
+    // Clear the previous interval if there is one
+    if (intervalRef.current) {
+      clearInterval(intervalRef.current);
     }
-    return color;
-  }
 
-  function hexToRgb(hex) {
-    const bigint = parseInt(hex.slice(1), 16);
-    const r = (bigint >> 16) & 255;
-    const g = (bigint >> 8) & 255;
-    const b = bigint & 255;
-    return { r, g, b };
-  }
-
-  // Function to convert RGB to hex
-  function rgbToHex(r, g, b) {
-    const componentToHex = (c) => {
-      const hex = c.toString(16);
-      return hex.length === 1 ? '0' + hex : hex;
-    };
-    return `#${componentToHex(r)}${componentToHex(g)}${componentToHex(b)}`;
-  }
-
-  // Function to create fading colors
-  function generateFadingColors(baseColor, steps = 6) {
-    const { r, g, b } = hexToRgb(baseColor);
-    const colors = [];
-
-    for (let i = 0; i < steps; i++) {
-      const factor = 1 - (i * 0.15); // Adjust the factor for more/less fading
-      const newR = Math.min(255, Math.floor(r * factor));
-      const newG = Math.min(255, Math.floor(g * factor));
-      const newB = Math.min(255, Math.floor(b * factor));
-
-      // Convert back to hex and add to the list
-      colors.push(rgbToHex(newR, newG, newB));
-    }
-    colors.reverse()
-    return colors;
-  }
-
-  useEffect(() => {
-    // Change the current base color every 3 seconds and generate fading colors
-    const colorInterval = setInterval(() => {
-      setCurrentColor(getRandomColor());
-    }, 3000);
-
-    return () => clearInterval(colorInterval);
-  }, []);
-
-  useEffect(() => {
-    const interval = setInterval(() => {
+    let t = 0;
+    intervalRef.current = setInterval(() => {
       setGrid((prevGrid) => {
         const newGrid = prevGrid.map((row) => row.map((cell) => ({ ...cell })));
-  
-        for (let col = 0; col < cols; col++) {
-          // Move raindrops down the column
-          for (let row = rows - 1; row >= 0; row--) {
-            if (newGrid[row][col].value > 0) {
-              // Check if we can move the raindrop down
-              if (row < rows - 1 && newGrid[row + 1][col].value === 0) {
-                // Move the drop down
-                newGrid[row + 1][col] = { 
-                  color: newGrid[row][col].color, 
-                  value: 1 
-                };
-                // Clear the current position
-                newGrid[row][col] = { color: '#222', value: 0 }; 
-              }
-              if(row==rows-1){
-                newGrid[row][col] = { color: '#222', value: 0 };
-              }
-            }
-            
-          }
 
-  
-          // Introduce a new raindrop at the top with a certain probability
-          if (Math.random() < 0.02 && newGrid[0][col].value === 0) {
-            const fadingColors = generateFadingColors(currentColor, 6);
-            // Fill the top 6 rows with fading colors
-            for (let i = 0; i < 6; i++) {
-              if (i < rows) {
-                newGrid[i][col] = { color: fadingColors[i], value: 1 };
-              }
-            }
+        let left = col - t, up = row - t, down = row + t, right = col + t;
+        let prevLeft = col - t + 1, prevUp = row - t + 1, prevDown = row + t - 1, prevRight = col + t - 1;
+
+        // Reset the previous boundary to black
+        if (prevUp >= 0) {
+          for (let i = Math.max(0, prevLeft); i <= Math.min(cols - 1, prevRight); i++) {
+            newGrid[prevUp][i] = { color: '#222', value: 0 };
           }
-  
         }
-  
+
+        if (prevDown < rows) {
+          for (let i = Math.max(0, prevLeft); i <= Math.min(cols - 1, prevRight); i++) {
+            newGrid[prevDown][i] = { color: '#222', value: 0 };
+          }
+        }
+
+        if (prevLeft >= 0) {
+          for (let i = Math.max(0, prevUp); i <= Math.min(rows - 1, prevDown); i++) {
+            newGrid[i][prevLeft] = { color: '#222', value: 0 };
+          }
+        }
+
+        if (prevRight < cols) {
+          for (let i = Math.max(0, prevUp); i <= Math.min(rows - 1, prevDown); i++) {
+            newGrid[i][prevRight] = { color: '#222', value: 0 };
+          }
+        }
+
+        // Reset the initially clicked cell after the first interval
+        if (t > 0) {
+          newGrid[row][col] = { color: '#222', value: 0 };
+        }
+
+        // Set the current boundary to blue
+        if (up >= 0) {
+          for (let i = Math.max(0, left); i <= Math.min(cols - 1, right); i++) {
+            newGrid[up][i] = { color: "blue", value: 1 };
+          }
+        }
+
+        if (down < rows) {
+          for (let i = Math.max(0, left); i <= Math.min(cols - 1, right); i++) {
+            newGrid[down][i] = { color: "blue", value: 1 };
+          }
+        }
+
+        if (left >= 0) {
+          for (let i = Math.max(0, up); i <= Math.min(rows - 1, down); i++) {
+            newGrid[i][left] = { color: "blue", value: 1 };
+          }
+        }
+
+        if (right < cols) {
+          for (let i = Math.max(0, up); i <= Math.min(rows - 1, down); i++) {
+            newGrid[i][right] = { color: "blue", value: 1 };
+          }
+        }
+
         return newGrid;
       });
+
+      t = (t + 1) % Math.max(rows, cols); // Reset t periodically to keep the effect looping
     }, 100); // Adjust interval for animation speed
-  
-    return () => clearInterval(interval);
-  }, [currentColor]);
-  
-  
-  
+  };
 
   return (
     <div className="App">
@@ -126,6 +98,7 @@ const App = () => {
               <div
                 key={colIndex}
                 className="cell"
+                onClick={() => gridTask(rowIndex, colIndex)}
                 style={{ backgroundColor: cell.color }}
               />
             ))}
