@@ -15,6 +15,7 @@ const App = () => {
 
   const gridTask = (row, col) => {
     // Clear the previous interval if there is one
+    setGrid(Array(rows).fill().map(() => Array(cols).fill({ color: '#222', value: 0 })));
     if (intervalRef.current) {
       clearInterval(intervalRef.current);
     }
@@ -25,38 +26,43 @@ const App = () => {
         const newGrid = prevGrid.map((row) => row.map((cell) => ({ ...cell })));
 
         let left = col - t, up = row - t, down = row + t, right = col + t;
-        let prevLeft = col - t + 1, prevUp = row - t + 1, prevDown = row + t - 1, prevRight = col + t - 1;
+        // let prevLeft = col - t + 1, prevUp = row - t + 1, prevDown = row + t - 1, prevRight = col + t - 1;
+         
+        // // Reset the previous boundary to black
+        // if (prevUp >= 0) {
+        //   for (let i = Math.max(0, prevLeft); i <= Math.min(cols - 1, prevRight); i++) {
+        //     newGrid[prevUp][i] = { color: '#222', value: 0 };
+        //   }
+        // }
 
-        // Reset the previous boundary to black
-        if (prevUp >= 0) {
-          for (let i = Math.max(0, prevLeft); i <= Math.min(cols - 1, prevRight); i++) {
-            newGrid[prevUp][i] = { color: '#222', value: 0 };
+        // if (prevDown < rows) {
+        //   for (let i = Math.max(0, prevLeft); i <= Math.min(cols - 1, prevRight); i++) {
+        //     newGrid[prevDown][i] = { color: '#222', value: 0 };
+        //   }
+        // }
+
+        // if (prevLeft >= 0) {
+        //   for (let i = Math.max(0, prevUp); i <= Math.min(rows - 1, prevDown); i++) {
+        //     newGrid[i][prevLeft] = { color: '#222', value: 0 };
+        //   }
+        // }
+
+        // if (prevRight < cols) {
+        //   for (let i = Math.max(0, prevUp); i <= Math.min(rows - 1, prevDown); i++) {
+        //     newGrid[i][prevRight] = { color: '#222', value: 0 };
+        //   }
+        // }
+
+        // // Reset the initially clicked cell after the first interval
+        // if (t > 0) {
+        //   newGrid[row][col] = { color: '#222', value: 0 };
+        // }
+
+        for(let i=0;i<20;i++){
+          for(let j=0;j<20;j++){
+            newGrid[i][j] = { color: '#222', value: 0 };
           }
         }
-
-        if (prevDown < rows) {
-          for (let i = Math.max(0, prevLeft); i <= Math.min(cols - 1, prevRight); i++) {
-            newGrid[prevDown][i] = { color: '#222', value: 0 };
-          }
-        }
-
-        if (prevLeft >= 0) {
-          for (let i = Math.max(0, prevUp); i <= Math.min(rows - 1, prevDown); i++) {
-            newGrid[i][prevLeft] = { color: '#222', value: 0 };
-          }
-        }
-
-        if (prevRight < cols) {
-          for (let i = Math.max(0, prevUp); i <= Math.min(rows - 1, prevDown); i++) {
-            newGrid[i][prevRight] = { color: '#222', value: 0 };
-          }
-        }
-
-        // Reset the initially clicked cell after the first interval
-        if (t > 0) {
-          newGrid[row][col] = { color: '#222', value: 0 };
-        }
-
         // Set the current boundary to blue
         if (up >= 0) {
           for (let i = Math.max(0, left); i <= Math.min(cols - 1, right); i++) {
